@@ -1,9 +1,10 @@
 import React from 'react'
+import InterviewChat from './components/interviewChat';
 
 const App = () => {
   return (
-    <div>
-      <h1 className='text-5xl text-blue-500 bg-amber-300' >Hello, MockMate this side</h1>
+     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-6">
+      <InterviewChat />
     </div>
   )
 }
