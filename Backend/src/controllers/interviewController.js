@@ -6,17 +6,13 @@ exports.startInterview = async (req, res) => {
   try {
     const { name, email, phone } = req.body;
 
-    
     const candidate = new Candidate({ name, email, phone });
     await candidate.save();
 
-    // Generate set of questions 
-    const questions = await aiService.generateQuestions();
-
-    // Create interview session
+    // Create interview session without any questions initially
     const session = new InterviewSession({
       candidate: candidate._id,
-      questions,
+      questions: [],
       responses: [],
       scores: { technical: 0, communication: 0, problemSolving: 0 },
       status: 'started',
@@ -26,7 +22,7 @@ exports.startInterview = async (req, res) => {
     res.status(201).json({
       sessionId: session._id,
       candidateId: candidate._id,
-      questions,
+      questions: [], // No questions initially
       message: 'Interview started',
     });
   } catch (error) {

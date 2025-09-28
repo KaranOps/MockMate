@@ -1,6 +1,6 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
-const gemini = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const gemini = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 
 const systemPrompt = `
     You are an expert interviewer for an SDE Intern role. Keep questions relevant, 
@@ -22,7 +22,7 @@ Generate the next interview question that is relevant and covers technical, prob
 `;
 
   const response = await gemini.chat.completions.create({
-    model: 'gemini-1.5-t',
+    model: 'gemini-2.0-flash',
     messages: [
       { role: 'system', content: 'You are an expert AI interviewer.' },
       { role: 'user', content: prompt }
@@ -57,7 +57,7 @@ Respond with a JSON object like:
 `;
 
   const response = await gemini.chat.completions.create({
-    model: 'gemini-1.5-t',
+    model: 'gemini-2.0-flash',
     messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: evaluationPrompt }],
     temperature: 0.5,
   });
@@ -91,7 +91,7 @@ Please provide a concise performance summary and recommendation.
 `;
 
   const response = await gemini.chat.completions.create({
-    model: 'gemini-1.5-t',
+    model: 'gemini-2.0-flash',
     messages: [{ role: 'system', content: 'You are a helpful recruiter assistant.' }, { role: 'user', content: summaryPrompt }],
     temperature: 0.7,
   });
