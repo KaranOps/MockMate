@@ -1,43 +1,39 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
+// Initialize Gemini with your API key
 const gemini = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 
+// Use the correct model name ("gemini-2.0-flash" or the exact model you want)
+const model = gemini.getGenerativeModel({ model: "gemini-2.0-flash" });
+
 const systemPrompt = `
-    You are an expert interviewer for an SDE Intern role. Keep questions relevant, 
-    concise and diverse in technical, problem-solving, and behavioral aspects.
+You are an expert interviewer for an SDE Intern role. Keep questions relevant, concise and diverse in technical, problem-solving, and behavioral aspects.
 `;
 
+// Generate the next interview question based on session Q&A history
 exports.generateNextQuestion = async (session) => {
-  // Build conversation context string from past Q&A
   const conversationContext = session.questions
     .map((q, i) => `Q: ${q}\nA: ${session.responses[i] || 'No answer'}`)
     .join('\n');
-
+  
   const prompt = `
-You are an AI interviewer for an SDE Intern role.
+${systemPrompt}
+
 Given this conversation history:
 ${conversationContext}
 
 Generate the next interview question that is relevant and covers technical, problem-solving, or behavioral aspects. Return only the question string.
-`;
+  `;
 
-  const response = await gemini.chat.completions.create({
-    model: 'gemini-2.0-flash',
-    messages: [
-      { role: 'system', content: 'You are an expert AI interviewer.' },
-      { role: 'user', content: prompt }
-    ],
-    temperature: 0.7,
-  });
-
-  return response.choices[0].message.content.trim();
+  const response = await model.generateContent(prompt);
+  const content = response?.response?.text();
+  return content?.trim() || "Could not generate a question.";
 };
 
-
-// Evaluate candidate response with Gemini and score it
+// Evaluate candidate's response and generate scores/feedback
 exports.evaluateResponse = async (question, answer) => {
   const evaluationPrompt = `
-You are an interviewer evaluating a candidate for SDE Intern role.
+${systemPrompt}
 
 Question: ${question}
 Candidate's Answer: ${answer}
@@ -56,28 +52,25 @@ Respond with a JSON object like:
 }
 `;
 
-  const response = await gemini.chat.completions.create({
-    model: 'gemini-2.0-flash',
-    messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: evaluationPrompt }],
-    temperature: 0.5,
-  });
+  const response = await model.generateContent(evaluationPrompt);
+  const content = response?.response?.text();
 
   try {
-    return JSON.parse(response.choices[0].message.content);
+    return JSON.parse(content);
   } catch (err) {
-    console.error('Error parsing evaluation JSON:', err);
+    console.error('Error parsing evaluation JSON:', err, '\nContent:', content);
     return { technical: 5, communication: 5, problemSolving: 5, feedback: 'Answer is unclear.' };
   }
 };
 
-// Generate final summary for the candidate after the interview ends
+// Generate performance summary for candidate after interview
 exports.generateFinalSummary = async (session) => {
   const summaryPrompt = `
 You are an expert recruiter that reviews interview data to produce a summary.
 
 Candidate Info:
-Name: ${session.candidate.name || 'N/A'}
-Email: ${session.candidate.email || 'N/A'}
+Name: ${session.candidate?.name || 'N/A'}
+Email: ${session.candidate?.email || 'N/A'}
 
 Interview Questions and Answers:
 ${session.questions.map((q, idx) => `Q${idx + 1}: ${q}\nA${idx + 1}: ${session.responses[idx] || 'No answer'}`).join('\n\n')}
@@ -90,11 +83,6 @@ Problem-Solving: ${session.scores.problemSolving}
 Please provide a concise performance summary and recommendation.
 `;
 
-  const response = await gemini.chat.completions.create({
-    model: 'gemini-2.0-flash',
-    messages: [{ role: 'system', content: 'You are a helpful recruiter assistant.' }, { role: 'user', content: summaryPrompt }],
-    temperature: 0.7,
-  });
-
-  return response.choices[0].message.content;
+  const response = await model.generateContent(summaryPrompt);
+  return response?.response?.text();
 };

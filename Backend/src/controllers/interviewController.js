@@ -54,10 +54,8 @@ exports.getNextQuestion = async (req, res) => {
     const session = await InterviewSession.findById(sessionId);
     if (!session) return res.status(404).json({ message: 'Session not found' });
 
-    // Generate new question based on past Q&A in session
     const nextQuestion = await aiService.generateNextQuestion(session);
 
-    // Add new question to session.questions
     session.questions.push(nextQuestion);
     await session.save();
 
