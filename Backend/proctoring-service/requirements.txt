@@ -1,0 +1,10 @@
+opencv-python
+dlib
+numpy
+imutils
+yolov5
+tensorflow
+pyaudio
+flask
+flask-cors
+requests
