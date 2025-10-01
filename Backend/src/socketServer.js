@@ -13,6 +13,13 @@ function createSocketServer(httpServer) {
 
   io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
+
+    // Join session room event
+    socket.on('joinSession', (sessionId) => {
+      socket.join(sessionId);
+      console.log(`Socket ${socket.id} joined room ${sessionId}`);
+    });
+
     signalingService.initializeHandlers(socket);
   });
 

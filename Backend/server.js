@@ -4,8 +4,6 @@ const cors = require('cors');
 const http = require('http');
 const connectDB = require('./src/config/db');
 
-
-
 const interviewRoutes = require('./src/routes/interviewRoutes');
 const proctoringRoutes = require('./src/routes/proctoring');
 
@@ -21,12 +19,9 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 connectDB();
 
 app.use('/api/interview', interviewRoutes);
-
-// Mount proctoring routes under /api/proctoring
 app.use('/api/proctoring', proctoringRoutes);
 
-
-// sanity check
+// Sanity check
 app.get('/', (req, res) => {
   res.send('AI Interviewer Backend is running...');
   console.log('AI Interviewer Backend accessed');
@@ -35,8 +30,8 @@ app.get('/', (req, res) => {
 // Initialize Socket.io signaling server separately
 createSocketServer(server);
 
-// Start server
+// Start server with HTTP server instance so Socket.io can work
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

@@ -1,15 +1,22 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import io from 'socket.io-client';
 
-export default function LiveProctoring({ sessionId }) {
+const socket = io('http://localhost:3000');
+
+export function useProctoring(sessionId) {
   const videoRef = useRef(null);
   const [status, setStatus] = useState('Initializing...');
-  const [intervalId, setIntervalId] = useState(null);
+  const [analysis, setAnalysis] = useState(null);
+  const intervalRef = useRef(null);
 
+  // Initialize webcam on mount
   useEffect(() => {
     async function startVideo() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        videoRef.current.srcObject = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
         setStatus('Camera started');
       } catch (err) {
         setStatus('Error accessing webcam: ' + err.message);
@@ -18,35 +25,50 @@ export default function LiveProctoring({ sessionId }) {
     startVideo();
 
     return () => {
-      if (intervalId) clearInterval(intervalId);
+      if (intervalRef.current) clearInterval(intervalRef.current);
       if (videoRef.current && videoRef.current.srcObject) {
-        videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+        videoRef.current.srcObject.getTracks().forEach(t => t.stop());
       }
     };
   }, []);
 
+  // Setup socket connection and subscription
   useEffect(() => {
     if (!sessionId) return;
 
-    const id = setInterval(() => {
-      captureAndSendFrame();
-    }, 1000); // Capture every 1 second
+    socket.emit('join-interview', sessionId);
+    socket.emit('subscribe-proctoring', sessionId);
 
-    setIntervalId(id);
+    socket.on('proctoringUpdate', data => {
+      setAnalysis(data);
+    });
 
-    return () => clearInterval(id);
+    return () => {
+      socket.off('proctoringUpdate');
+    };
   }, [sessionId]);
 
+  // Capture & send frame every second
+  useEffect(() => {
+    if (!sessionId || !videoRef.current) return;
+
+    intervalRef.current = setInterval(() => {
+      captureAndSendFrame();
+    }, 1000);
+
+    return () => clearInterval(intervalRef.current);
+  }, [sessionId, videoRef.current]);
+
   const captureAndSendFrame = async () => {
-    if (!videoRef.current) return;
+    const video = videoRef.current;
+    if (!video) return;
 
     const canvas = document.createElement('canvas');
-    canvas.width = videoRef.current.videoWidth;
-    canvas.height = videoRef.current.videoHeight;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
 
     const ctx = canvas.getContext('2d');
-    ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     const dataUrl = canvas.toDataURL('image/jpeg');
     const base64Image = dataUrl.split(',')[1];
 
@@ -56,17 +78,11 @@ export default function LiveProctoring({ sessionId }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ frameData: base64Image }),
       });
-      setStatus('Frame sent and analyzed');
-    } catch (e) {
-      setStatus('Network error: ' + e.message);
+      setStatus('Frame sent for analysis');
+    } catch (err) {
+      setStatus('Error sending frame: ' + err.message);
     }
   };
 
-  return (
-    <div>
-      <h2>Live Proctoring</h2>
-      <video ref={videoRef} autoPlay playsInline width={400} />
-      <p>Status: {status}</p>
-    </div>
-  );
+  return { videoRef, status, analysis };
 }

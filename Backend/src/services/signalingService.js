@@ -24,6 +24,14 @@ class SignalingService {
     socket.on('disconnect', () => {
       this.handleDisconnect(socket);
     });
+
+    // New event listener or you can trigger emit from backend directly
+    socket.on('subscribe-proctoring', (sessionId) => {
+      socket.join(sessionId);
+      console.log(`Socket ${socket.id} subscribed to proctoring for session ${sessionId}`);
+    });
+
+
   }
 
   handleJoinInterview(socket, sessionId) {
@@ -79,6 +87,10 @@ class SignalingService {
     }
 
     console.log(`Socket ${socket.id} disconnected`);
+  }
+
+  emitProctoringUpdate(sessionId, analysis) {
+    this.io.to(sessionId).emit('proctoringUpdate', analysis);
   }
 }
 
