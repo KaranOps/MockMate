@@ -1,5 +1,3 @@
-![alt text]({94989828-BF03-433F-96B5-16E371D1431E}.png)
-
 # AI-Based Live Proctoring System
 
 ## Overview
@@ -325,3 +323,5 @@ For questions, issues, or feature requests:
 ---
 
 **Built with ❤️ for fair and secure online assessments**
+
+<!-- ![alt text]({94989828-BF03-433F-96B5-16E371D1431E}.png) -->
